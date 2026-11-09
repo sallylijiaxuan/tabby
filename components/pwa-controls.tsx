@@ -11,15 +11,19 @@ export function PwaControls(){
   const prompt=(event:Event)=>{event.preventDefault();setInstall(event as InstallEvent)};
   updateMode();online();mode.addEventListener('change',updateMode);window.addEventListener('online',online);window.addEventListener('offline',online);window.addEventListener('beforeinstallprompt',prompt);window.addEventListener('appinstalled',updateMode);
   let disposed=false;
+  let registrationRef:ServiceWorkerRegistration|undefined;
+  const checkForUpdate=()=>{if(document.visibilityState==='visible'&&navigator.onLine)registrationRef?.update().catch(()=>{})};
+  document.addEventListener('visibilitychange',checkForUpdate);
   if(process.env.NODE_ENV==='production'&&'serviceWorker' in navigator){
    navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(registration=>{
     if(disposed)return;
+    registrationRef=registration;checkForUpdate();
     if(registration.waiting)setWaiting(registration.waiting);
     registration.addEventListener('updatefound',()=>{const worker=registration.installing;worker?.addEventListener('statechange',()=>{if(!disposed&&worker.state==='installed'){if(navigator.serviceWorker.controller)setWaiting(worker);else setOfflineReady(true)}if(!disposed&&worker.state==='redundant')setSetupFailed(true)})});
     navigator.serviceWorker.ready.then(()=>{if(!disposed)setOfflineReady(true)});
    }).catch(()=>{if(!disposed)setSetupFailed(true)});
   }
-  return()=>{disposed=true;mode.removeEventListener('change',updateMode);window.removeEventListener('online',online);window.removeEventListener('offline',online);window.removeEventListener('beforeinstallprompt',prompt);window.removeEventListener('appinstalled',updateMode)};
+  return()=>{disposed=true;document.removeEventListener('visibilitychange',checkForUpdate);mode.removeEventListener('change',updateMode);window.removeEventListener('online',online);window.removeEventListener('offline',online);window.removeEventListener('beforeinstallprompt',prompt);window.removeEventListener('appinstalled',updateMode)};
  },[]);
  async function installApp(){if(install){await install.prompt();const result=await install.userChoice;if(result.outcome==='accepted')setStandalone(true);setInstall(null)}else setInstructions(true)}
  function update(){if(!waiting)return;navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload(),{once:true});waiting.postMessage('SKIP_WAITING')}
