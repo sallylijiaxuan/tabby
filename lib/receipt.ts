@@ -17,7 +17,7 @@ export function normalizeItem(item: Omit<ReceiptItem, 'quantity'> & { quantity?:
 }
 
 export function parseReceipt(text: string) {
-  const items: ReceiptItem[] = [], charges: Charge[] = [];
+  const items: ReceiptItem[] = [];
   let tax = 0, tip = 0, afterSubtotal = false;
   const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   for (let index = 0; index < lines.length; index++) {
@@ -41,10 +41,10 @@ export function parseReceipt(text: string) {
     if (/\btax\b/i.test(label)) { tax += amount; afterSubtotal = true; continue; }
     if (/\btip\b|gratuity/i.test(label)) { tip += amount; afterSubtotal = true; continue; }
     if (isBillCharge(label)) {
-      charges.push({ id: charges.length + 1, name: label, amount }); continue;
+      tax += amount; continue;
     }
     if (/total|balance|change|visa|mastercard|cash|payment|saving|tender|credit|debit|paid|card|due|suggest|%/i.test(label)) continue;
-    if (afterSubtotal) { charges.push({ id: charges.length + 1, name: label, amount }); continue; }
+    if (afterSubtotal) { tax += amount; continue; }
     // A receipt may print quantity, unit price, and extended amount in one row.
     const unit = label.match(/^(.*?)\s+@?\$?(\d+[.,]\d{2})$/);
     if (unit) label = unit[1].trim();
@@ -54,5 +54,5 @@ export function parseReceipt(text: string) {
     // Amount is authoritative, avoiding double multiplication of receipt quantities.
     items.push(normalized);
   }
-  return { items, charges, tax: Math.round(tax * 100) / 100, tip: Math.round(tip * 100) / 100 };
+  return { items, tax: Math.round(tax * 100) / 100, tip: Math.round(tip * 100) / 100 };
 }
