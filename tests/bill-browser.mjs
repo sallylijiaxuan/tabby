@@ -1,0 +1,37 @@
+import {chromium,expect} from '@playwright/test';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+try {
+ const page=await browser.newPage();
+ await page.addInitScript(()=>{if(!localStorage.getItem('test-seeded')){localStorage.setItem('tabby-bill',JSON.stringify({items:[{id:1,name:'2 Pasta',price:60,people:[0]},{id:2,name:'Fish',price:40,people:[1]},{id:3,name:'NCA',price:10,people:[0]}],people:['You','Alex'],tax:10,tip:20,restaurant:'Test dinner'}));localStorage.setItem('test-seeded','true')}});
+ await page.goto('http://127.0.0.1:5174');
+ await expect(page.getByLabel('Pasta quantity',{exact:true})).toHaveValue('2');
+ await expect(page.getByLabel('Pasta price',{exact:true})).toHaveValue('30');
+ await expect(page.getByLabel('Pasta amount',{exact:true})).toHaveText('$60.00');
+ await expect(page.getByLabel('NCA amount',{exact:true})).toHaveValue('10');
+ assert.equal(await page.getByLabel('NCA price',{exact:true}).count(),0);
+ await expect(page.locator('.summary-person').nth(0)).toContainText('$84.00');
+ await expect(page.locator('.summary-person').nth(1)).toContainText('$56.00');
+ await page.getByRole('button',{name:'Settle up',exact:true}).click();
+ await expect(page.locator('.settle-row').nth(0)).toContainText('NCA $6.00');
+ await expect(page.locator('.settle-row').nth(1)).toContainText('NCA $4.00');
+ await page.getByRole('button',{name:'Close',exact:true}).click();
+ const qty=page.getByLabel('Pasta quantity',{exact:true});await qty.fill('2+1');await qty.press('Enter');
+ await expect(qty).toHaveValue('3');
+ await expect(page.getByLabel('Pasta amount',{exact:true})).toHaveText('$90.00');
+ const price=page.getByLabel('Pasta price',{exact:true});await price.fill('6+5');await price.press('Enter');
+ await expect(price).toHaveValue('11');
+ await expect(page.getByLabel('Pasta amount',{exact:true})).toHaveText('$33.00');
+ await qty.fill('0');await qty.press('Enter');await expect(page.getByRole('alert')).toContainText('at least 1');await qty.press('Escape');
+ await page.getByRole('button',{name:'Add NCA or other charge'}).click();
+ const charge=page.getByLabel('Other charge amount',{exact:true});await charge.fill('0-5');await charge.press('Enter');
+ await expect(charge).toHaveValue('-5');
+ await page.reload();await expect(qty).toHaveValue('3');await expect(charge).toHaveValue('-5');
+ await page.setViewportSize({width:390,height:844});
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+ assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth>el.clientWidth));
+ assert(await page.locator('.extras-editor').evaluate(el=>el.getBoundingClientRect().width>250));
+ assert(await page.locator('.bill-bottom').evaluate(el=>el.scrollWidth<=el.clientWidth));
+ await page.screenshot({path:'/private/tmp/tabby-columns-mobile.png',fullPage:true});
+ console.log('Passed: old receipt migration, separate columns, proportional NCA, per-person breakdown, quantity and price calculations, invalid quantities, discounts, persistence, and mobile layout.');
+} finally {await browser.close();}

@@ -1,5 +1,5 @@
 /** Evaluate arithmetic without executing JavaScript. Amounts are nonnegative cents. */
-export function calculateAmount(input: string): number {
+export function calculateAmount(input: string, allowNegative = false): number {
   const text = input.replace(/\s/g, '').replace(/×/g, '*').replace(/÷/g, '/');
   if (!text) return 0;
   if (text.length > 200) throw new Error('Expression is too long.');
@@ -39,7 +39,7 @@ export function calculateAmount(input: string): number {
   }
   const result = sum();
   if (pos !== text.length) throw new Error('Use numbers, +, −, *, /, and parentheses.');
-  if (!Number.isFinite(result) || result < 0 || !Number.isSafeInteger(Math.round(result * 100)))
+  if (!Number.isFinite(result) || (!allowNegative && result < 0) || !Number.isSafeInteger(Math.round(result * 100)))
     throw new Error('Enter a valid, nonnegative amount.');
   return Math.round((result + Number.EPSILON) * 100) / 100;
 }

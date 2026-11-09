@@ -9,3 +9,6 @@ assert.deepEqual(allocate(0,[60,40]),[0,0]);
 assert.deepEqual(allocate(201,[0,1]),[0,201]);
 for(let total=0;total<10000;total+=37){const parts=allocate(total,[11,47,29,3]);assert.equal(parts.reduce((a,b)=>a+b,0),total);assert(parts.every(n=>Number.isInteger(n)&&n>=0));}
 console.log('Passed: proportional tax/tip, shared-item rounding, zero amounts, and cent conservation.');
+
+assert.deepEqual(allocate(1000,[6000,4000]),[600,400]);
+assert.deepEqual(allocate(-101,[60,40]),[-61,-40]);
