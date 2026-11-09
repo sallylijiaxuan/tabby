@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {parseReceipt} from '../lib/receipt.ts';
+import {parseReceipt, normalizeItem} from '../lib/receipt.ts';
 const result=parseReceipt('DINNER\nBurger $18.00\nSalad 12,00 T\nSUBTOTAL 30.00\nSALES TAX 3.00\nTIP 6.00\nTOTAL 39.00\nVISA 39.00\nSuggested tip 20% 7.80');
 assert.deepEqual(result.items.map(({name,price})=>({name,price})),[{name:'Burger',price:18},{name:'Salad',price:12}]);
 assert.equal(result.tax,3);assert.equal(result.tip,6);
@@ -12,3 +12,15 @@ assert.deepEqual(detailed.items.map(({name,price,quantity})=>({name,price,quanti
 assert.deepEqual(detailed.charges.map(({name,amount})=>({name,amount})),[{name:'NCA (3%)',amount:1.62},{name:'Kitchen support',amount:2},{name:'Discount',amount:-3}]);
 assert.equal(detailed.tax,5.4);assert.equal(detailed.tip,9.72);
 console.log('Passed: quantity and unit-price separation, extended amounts, NCA, generic bill charges, discounts, and percentage gratuity.');
+
+for (const text of ['CHIP. PRAWNS & SCALLOPS 26.00 1 26.00','CHIP. PRAWNS & SCALLOPS 26.00 1']) {
+ const item=parseReceipt(text).items[0];
+ assert.equal(item.name,'CHIP. PRAWNS & SCALLOPS');assert.equal(item.price,26);assert.equal(item.quantity,1);
+}
+const multiple=parseReceipt('CHIP. PRAWNS & SCALLOPS 26.00 2 52.00').items[0];
+assert.equal(multiple.name,'CHIP. PRAWNS & SCALLOPS');assert.equal(multiple.price,26);assert.equal(multiple.quantity,2);
+const saved=normalizeItem({id:9,name:'CHIP. PRAWNS & SCALLOPS 26.00 1',price:26,quantity:1,people:[0,1]});
+assert.equal(saved.name,'CHIP. PRAWNS & SCALLOPS');assert.deepEqual(saved.people,[0,1]);
+assert.equal(normalizeItem(saved).name,saved.name);
+assert.equal(normalizeItem({id:10,name:'Wings No. 5',price:12,quantity:1,people:[]}).name,'Wings No. 5');
+console.log('Passed: trailing unit price and quantity are removed from scanned and saved item names, with quantities and assignments retained.');

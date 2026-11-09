@@ -4,6 +4,12 @@ export const isBillCharge = (name: string) => /\bn\.?c\.?a\.?\b|non[- ]?cash|sur
 
 /** Older saved receipts stored the entire row amount in price. */
 export function normalizeItem(item: Omit<ReceiptItem, 'quantity'> & { quantity?: number }): ReceiptItem {
+  // Some receipts order columns as description, unit price, quantity, amount.
+  // Clean these labels even when a previously saved row already has quantity=1.
+  const trailing = item.name.match(/^(.*?)\s+\$?(\d+[.,]\d{2})\s+(\d+)\s*$/);
+  if (trailing && /[a-z]/i.test(trailing[1]) && Number(trailing[3]) > 0) {
+    return { ...item, name: trailing[1].trim(), price: Number(trailing[2].replace(',', '.')), quantity: Number(trailing[3]) };
+  }
   if (Number.isInteger(item.quantity) && item.quantity! > 0) return { ...item, quantity: item.quantity! };
   const match = item.name.match(/^(\d+)\s*(?:[x×]\s*|\s+)(.+)$/i);
   const quantity = match && Number(match[1]) > 0 ? Number(match[1]) : 1;
@@ -17,7 +23,15 @@ export function parseReceipt(text: string) {
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     if (/^sub[- ]?total\b/i.test(line)) { afterSubtotal = true; continue; }
-    const match = line.match(/^(.*?)\s*\$?\s*(-?\d+[.,]\d{2})\s*(?:[A-Z*])?$/i);
+    let match = line.match(/^(.*?)\s*\$?\s*(-?\d+[.,]\d{2})\s*(?:[A-Z*])?$/i);
+    if (!match) {
+      // Receipts without a separate extended amount can end in unit price + qty.
+      const trailing = line.match(/^(.*?)\s+\$?(\d+[.,]\d{2})\s+(\d+)\s*$/);
+      if (trailing && Number(trailing[3]) > 0) {
+        const amount = Number(trailing[2].replace(',', '.')) * Number(trailing[3]);
+        match = [line, line, amount.toFixed(2)] as RegExpMatchArray;
+      }
+    }
     if (!match) continue;
     let label = match[1].trim().replace(/[.$]+$/, '').trim();
     if (!label && index > 0) label = lines[index - 1];
