@@ -1,4 +1,38 @@
-# vinext-starter
+# Tabby
+
+Split restaurant receipts by item, with proportional tax and tip. Tabby is an installable web app for personal use on iPhone; the same code also runs in a desktop browser.
+
+## Use on iPhone
+
+1. Open the deployed Tabby URL in Safari and sign in if prompted.
+2. Use Safari’s Share menu (or More → Share), then **Add to Home Screen**.
+3. Keep **Open as Web App** enabled if shown, then tap **Add**.
+4. Open the new Tabby icon while online and wait for **Ready offline** before going offline.
+
+The app includes its receipt OCR assets in its offline cache, so item entry, scanning, splits, and saved bills can work after setup without internet. **Scan receipt → Take a photo** opens the camera option; **Choose a photo** opens the photo picker. Physical camera and installation behavior should be verified on the actual iPhone.
+
+Bills are stored locally in the browser/app on that device. They do not automatically transfer from your Mac, between browsers, or between the local and hosted URLs. Clearing site data can remove bills and the offline cache.
+
+## Run locally
+
+```sh
+npm run dev -- --port 5174
+```
+
+Offline caching is enabled only in production builds so it does not interfere with development reloads. To test the installed-app build locally:
+
+```sh
+npm run build
+npm start -- --port 5175
+```
+
+After rebuilding, restart the production preview. The build generates a versioned service worker from the final client assets. New versions show **Update app** rather than reloading during bill editing.
+
+Browser verification: `node tests/pwa-browser.mjs` runs the production PWA checks in Chrome. Set `PWA_BROWSER=webkit` to use Playwright’s installed WebKit browser, which checks the iPhone layout, offline reload, first receipt OCR scan offline, camera input configuration, and history.
+
+---
+
+# Build infrastructure
 
 A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
 

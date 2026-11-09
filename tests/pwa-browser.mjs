@@ -1,0 +1,59 @@
+import {chromium,webkit,devices,expect} from '@playwright/test';
+import assert from 'node:assert/strict';
+const engine=process.env.PWA_BROWSER==='webkit'?'webkit':'chromium';
+const browser=await (engine==='webkit'?webkit:chromium).launch(engine==='chromium'?{channel:'chrome',headless:true}:{headless:true});
+const context=await browser.newContext({...devices['iPhone 13'],serviceWorkers:'allow'});
+try{
+ const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.goto('http://127.0.0.1:5175');
+ await expect(page.getByRole('button',{name:'Install app',exact:true})).toBeVisible();
+ const manifest=await (await page.request.get('http://127.0.0.1:5175/manifest.webmanifest')).json();
+ assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'/');assert.equal(manifest.icons.length,3);
+ assert.equal(await page.locator('link[rel=apple-touch-icon]').getAttribute('href'),'/icons/apple-touch-icon.png');
+ await page.getByRole('button',{name:'Install app',exact:true}).click();
+ await expect(page.getByRole('dialog',{name:'Install Tabby'})).toContainText('Add to Home Screen');
+ await page.getByRole('button',{name:'Got it',exact:true}).click();
+ await page.waitForFunction(async()=>{
+  if(!navigator.serviceWorker.controller)return false;
+  const keys=await caches.keys(),key=keys.find(key=>key.startsWith('tabby-'));
+  if(!key)return false;const cache=await caches.open(key);
+  return !!(await cache.match('/'))&&!!(await cache.match('/ocr/eng.traineddata'));
+ },null,{timeout:60000});
+ await page.getByLabel('Bill name',{exact:true}).fill('My iPhone dinner');
+ const image=await page.evaluate(()=>{
+  const c=document.createElement('canvas');c.width=900;c.height=750;const ctx=c.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,900,750);ctx.fillStyle='black';ctx.font='32px monospace';
+  ['TABBY TEST RESTAURANT','Burger             18.00','Salad              12.00','SUBTOTAL           30.00','TAX                 3.00','TIP                 6.00','TOTAL              39.00'].forEach((line,i)=>ctx.fillText(line,50,70+i*75));
+  return c.toDataURL('image/png').split(',')[1];
+ });
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('tabby-bill')).restaurant)).toBe('My iPhone dinner');
+ await context.setOffline(true);
+ await page.reload();
+ await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('My iPhone dinner');
+ await expect(page.locator('.pwa-bar [role=status]')).toContainText('You’re offline');
+ await page.getByRole('button',{name:'Scan receipt',exact:true}).click();
+ const cameraPromise=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Take a photo',exact:true}).click();const camera=await cameraPromise;
+ assert.equal(await page.locator('input[type=file]').getAttribute('capture'),'environment');await camera.setFiles([]);
+ const libraryPromise=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Choose a photo',exact:true}).click();const library=await libraryPromise;
+ assert.equal(await page.locator('input[type=file]').getAttribute('capture'),null);
+ await library.setFiles({name:'receipt.png',mimeType:'image/png',buffer:Buffer.from(image,'base64')});
+ await expect(page.getByLabel('Burger price',{exact:true})).toHaveValue('18',{timeout:90000});
+ await expect(page.getByLabel('Tax amount',{exact:true})).toHaveValue('3');
+ await expect(page.getByLabel('Tip amount',{exact:true})).toHaveValue('6');
+ await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$30.00');
+ const qty=page.getByLabel('Burger quantity',{exact:true});await qty.fill('2');await qty.press('Enter');
+ await expect(page.getByLabel('Burger amount',{exact:true})).toHaveText('$36.00');
+ for(const width of [320,375,390,430]){
+  await page.setViewportSize({width,height:844});
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document fits ${width}`);
+  assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth<=el.clientWidth),`items fit ${width}`);
+ }
+ await page.getByRole('button',{name:'Past bills',exact:true}).click();
+ await expect(page.locator('.history-entry')).toHaveCount(2);
+ await page.getByRole('button').filter({hasText:'My iPhone dinner'}).click();
+ await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('My iPhone dinner');
+ await page.setViewportSize({width:390,height:844});
+ await page.getByLabel('Burrata & heirloom tomatoes quantity',{exact:true}).scrollIntoViewIfNeeded();
+ await page.screenshot({path:`/private/tmp/tabby-iphone-${engine}.png`,fullPage:false});
+ assert.deepEqual(errors,[]);
+ console.log(`Passed (${engine}): iPhone install metadata and instructions, offline reload, first OCR scan entirely offline, camera/library selection, quantity edits, history, and 320–430px layouts.`);
+}finally{await context.close();await browser.close()}

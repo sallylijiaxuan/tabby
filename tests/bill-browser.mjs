@@ -32,7 +32,7 @@ try {
  await page.reload();await expect(tax).toHaveValue('10.5');
  await page.setViewportSize({width:390,height:844});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
- assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth>el.clientWidth));
+ assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth<=el.clientWidth));
  assert(await page.locator('.extras-editor').evaluate(el=>el.getBoundingClientRect().width>250));
  assert(await page.locator('.bill-bottom').evaluate(el=>el.scrollWidth<=el.clientWidth));
  assert.equal(await page.locator('header').count(),1);
