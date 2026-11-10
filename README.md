@@ -90,30 +90,6 @@ npm start
 
 Open the printed URL. After rebuilding, restart the production preview. New versions show **Update app** rather than reloading during bill editing.
 
-### Verify the PWA
-
-The browser test expects the production preview on port **5175**:
-
-```sh
-npm start -- --port 5175
-```
-
-In another terminal:
-
-```sh
-node tests/pwa-browser.mjs
-```
-
-The default test uses Chrome. With Playwright’s WebKit browser installed, use `PWA_BROWSER=webkit node tests/pwa-browser.mjs` to check the iPhone layout, offline reload, first receipt OCR scan offline, camera input configuration, and history.
-
----
-
-<details>
-<summary><strong>Developer reference: build infrastructure and hosting</strong></summary>
-
-
-A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
-
 ## Prerequisites
 
 - Node.js `>=22.13.0`
