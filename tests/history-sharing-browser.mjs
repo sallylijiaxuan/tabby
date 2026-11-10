@@ -1,0 +1,40 @@
+import {chromium,devices,expect} from '@playwright/test';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+try{
+ const context=await browser.newContext({...devices['iPhone 13'],locale:'en-US',timezoneId:'America/Los_Angeles'});
+ const page=await context.newPage();
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copiedText=text}}});
+  if(localStorage.getItem('sharing-seeded'))return;
+  const bill=(id,name,date)=>({id,restaurant:name,createdAt:date,updatedAt:'2026-11-09T22:00:00Z',items:[{id:1,name:'Pasta',price:60,quantity:1,people:[0]},{id:2,name:'Fish',price:40,quantity:1,people:[1]}],people:['You','Alex'],tax:10,tip:20,tipRate:null,tipAfterTax:false});
+  const a=bill('a','Dinner A','2026-11-07T20:00:00Z'),b=bill('b','Dinner B','2026-11-08T20:00:00Z'),c=bill('c','Dinner C','2026-11-09T20:00:00Z');
+  localStorage.setItem('tabby-history',JSON.stringify([a,b,c]));localStorage.setItem('tabby-bill',JSON.stringify(b));localStorage.setItem('sharing-seeded','1');
+ });
+ await page.goto('http://127.0.0.1:5174');await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('Dinner B');
+ await page.getByLabel('Bill name',{exact:true}).fill('Edited dinner B');
+ await page.getByRole('button',{name:'Settle up',exact:true}).click();
+ await expect(page.getByRole('radio',{name:'Totals only',exact:true})).toBeChecked();
+ await page.getByRole('button',{name:'Copy split for the group',exact:true}).click();
+ await expect.poll(()=>page.evaluate(()=>window.__copiedText)).toBe('Edited dinner B\nYou: $78.00\nAlex: $52.00\nTotal: $130.00');
+ await page.getByRole('radio',{name:'Items + tax + tip',exact:true}).check();await page.getByRole('button',{name:'Copy split for the group',exact:true}).click();
+ const detailed=await page.evaluate(()=>window.__copiedText);assert(detailed.includes('You: $78.00 (items $60.00 + tax $6.00 + tip $12.00)'));assert(detailed.includes('Alex: $52.00 (items $40.00 + tax $4.00 + tip $8.00)'));
+ await page.getByRole('button',{name:'Close',exact:true}).click();
+ await page.getByRole('button',{name:'Open past bills',exact:true}).click();
+ assert.equal(await page.getByRole('button',{name:'Current bill',exact:true}).count(),0);
+ await expect(page.locator('.history-date-group')).toHaveCount(3);
+ const dates=await page.locator('.history-date-group h3').allTextContents();assert(dates[0].includes('Nov 9'));assert(dates[1].includes('Nov 8'));assert(dates[2].includes('Nov 7'));
+ await expect(page.locator('.history-date-group').nth(1)).toContainText('Edited dinner B');
+ const row=id=>page.locator(`.history-row[data-bill-id="${id}"]`);
+ await row('a').getByRole('button',{name:'Delete bill Dinner A',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(2);
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(3);await expect(page.locator('.history-date-group').last()).toContainText('Dinner A');
+ await row('a').getByRole('button',{name:'Delete bill Dinner A',exact:true}).click();await page.reload();await page.getByRole('button',{name:'Open past bills',exact:true}).click();await expect(row('a')).toHaveCount(0);
+ await row('b').getByRole('button',{name:'Delete bill Edited dinner B',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(1);
+ await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$0.00');await expect(page.locator('.people-list .person')).toHaveCount(1);
+ await page.getByRole('button',{name:'Open past bills',exact:true}).click();await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(row('b')).toHaveCount(1);await row('b').locator('.history-entry').click();await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('Edited dinner B');
+ await page.getByRole('button',{name:'Open past bills',exact:true}).click();await row('b').getByRole('button',{name:'Delete bill Edited dinner B',exact:true}).click();await page.reload();await page.getByRole('button',{name:'Open past bills',exact:true}).click();await expect(row('b')).toHaveCount(0);await expect(page.locator('.history-entry')).toHaveCount(1);
+ await page.screenshot({path:'/private/tmp/tabby-dated-history.png',fullPage:false});
+ await row('c').locator('.history-entry').click();await page.getByRole('button',{name:'Settle up',exact:true}).click();await page.screenshot({path:'/private/tmp/tabby-share-options.png',fullPage:false});
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ console.log('Passed: direct logo history, stable added-date groups, past/current deletion and Undo, no resurrection after reload, and exact copied text for both share formats.');
+}finally{await browser.close()}

@@ -3,14 +3,9 @@ import assert from 'node:assert/strict';
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
  const context=await browser.newContext({...devices['iPhone 13']});const page=await context.newPage();await page.goto('http://127.0.0.1:5174');
- const logo=page.getByRole('button',{name:'Open Tabby menu',exact:true});
- await expect(logo).toBeVisible();
  await page.waitForFunction(()=>!!localStorage.getItem('tabby-bill'));
- assert.equal(await page.getByRole('button',{name:'Past bills',exact:true}).count(),0);
+ const logo=page.getByRole('button',{name:'Open past bills',exact:true});await logo.click();await expect(page.locator('.history-entry')).toHaveCount(1);await page.getByRole('button',{name:'Close',exact:true}).click();
  assert.equal(await page.locator('.steps').count(),0);
- await logo.click();await expect(page.getByRole('navigation',{name:'Tabby menu'})).toBeVisible();await page.keyboard.press('Escape');await expect(logo).toHaveAttribute('aria-expanded','false');
- await logo.click();await page.mouse.click(375,400);await expect(logo).toHaveAttribute('aria-expanded','false');
- await logo.click();await page.getByRole('button',{name:'Past bills',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(1);await page.getByRole('button',{name:'Close',exact:true}).click();
  const itemName='Burrata & heirloom tomatoes';const row=page.locator('.item').first();
  await page.getByRole('button',{name:`Choose who pays for ${itemName}`,exact:true}).click();
  await row.getByRole('button',{name:`Select all for ${itemName}`,exact:true}).click();

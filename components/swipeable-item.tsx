@@ -14,9 +14,9 @@ export function SwipeableItem({name,onRemove,children}:{name:string;onRemove:()=
    const current=gesture.current;if(!current||event.touches.length!==1)return;
    const dx=event.touches[0].clientX-current.x,dy=event.touches[0].clientY-current.y;
    if(!current.horizontal){if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){gesture.current=null;return}if(Math.abs(dx)<12||Math.abs(dx)<Math.abs(dy)*1.4)return;current.horizontal=true;setDragging(true)}
-   setOffset(Math.max(-84,Math.min(0,current.start+dx)));
+   setOffset(Math.max(-96,Math.min(0,current.start+dx)));
   }}
-  onTouchEnd={()=>{const current=gesture.current;if(current?.horizontal)setOffset(value=>value<-40?-84:0);gesture.current=null;setDragging(false)}}
+  onTouchEnd={()=>{const current=gesture.current;if(current?.horizontal)setOffset(value=>value<-40?-96:0);gesture.current=null;setDragging(false)}}
   onTouchCancel={()=>{gesture.current=null;setDragging(false);setOffset(0)}}>
   <button className="swipe-delete" aria-label={`Delete ${name}`} tabIndex={offset<0?0:-1} aria-hidden={offset===0} onClick={onRemove}><Trash2 size={18}/><span>Delete</span></button>
   <div className="item">{children}</div>

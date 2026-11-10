@@ -47,8 +47,7 @@ try{
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document fits ${width}`);
   assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth<=el.clientWidth),`items fit ${width}`);
  }
- await page.getByRole('button',{name:'Open Tabby menu',exact:true}).click();
- await page.getByRole('button',{name:'Past bills',exact:true}).click();
+ await page.getByRole('button',{name:'Open past bills',exact:true}).click();
  await expect(page.locator('.history-entry')).toHaveCount(2);
  await page.getByRole('button').filter({hasText:'My iPhone dinner'}).click();
  await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('My iPhone dinner');

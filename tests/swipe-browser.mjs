@@ -3,13 +3,12 @@ import assert from 'node:assert/strict';
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
  const context=await browser.newContext({...devices['iPhone 13']});const page=await context.newPage();await page.goto('http://127.0.0.1:5174');await page.waitForFunction(()=>!!localStorage.getItem('tabby-bill'));
- await page.getByRole('button',{name:'Open Tabby menu',exact:true}).click();
- await expect(page.getByRole('button',{name:'New split',exact:true})).toHaveCount(1);
- assert.equal(await page.locator('.app-menu').getByRole('button',{name:'New split',exact:true}).count(),0);await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:'Open past bills',exact:true}).click();
+ assert.equal(await page.getByRole('button',{name:'Current bill',exact:true}).count(),0);await page.getByRole('button',{name:'Close',exact:true}).click();
  assert.equal(await page.locator('.fair-note').count(),0);assert.equal(await page.getByRole('button',{name:'Try the example bill',exact:true}).count(),0);
  await page.getByRole('button',{name:'20%',exact:true}).click();
- const order=await page.locator('.extras-editor').evaluate(el=>['.extra-fields','.tip-controls-label','.tip-options','.tip-basis','.tip-amount-row','.receipt-total'].map(selector=>el.querySelector(selector).getBoundingClientRect().top));
- assert(order.every((top,index)=>index===0||top>order[index-1]),'tax → adjust tip → percentage → calculate tip → tip amount → total');
+ const order=await page.locator('.extras-editor').evaluate(el=>['.extra-fields','.tip-amount-row','.tip-controls-label','.tip-options','.tip-basis','.receipt-total'].map(selector=>el.querySelector(selector).getBoundingClientRect().top));
+ assert(order.every((top,index)=>index===0||top>order[index-1]),'tax → tip amount → adjust tip → percentage → calculate tip → total');
  // Use actual browser touch events, not a JavaScript-only handler invocation.
  const client=await context.newCDPSession(page);
  const amount=page.getByLabel('Burrata & heirloom tomatoes amount',{exact:true});await amount.scrollIntoViewIfNeeded();
@@ -17,6 +16,7 @@ try{
  async function swipe(from,to,atY){await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y:atY}]});for(let i=1;i<=8;i++)await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from+(to-from)*i/8,y:atY}]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}
  await swipe(x,x-150,y);
  const remove=page.getByRole('button',{name:'Delete Burrata & heirloom tomatoes',exact:true});await expect(remove).toBeVisible();await expect(amount).toHaveCount(1);
+ const gap=await page.locator('.swipe-row').first().evaluate(el=>el.querySelector('.swipe-delete').getBoundingClientRect().left-el.querySelector('.item').getBoundingClientRect().right);assert(gap>=11,'12px gap between item and Delete');
  await page.screenshot({path:'/private/tmp/tabby-swipe-delete.png',fullPage:false});
  await swipe(x-100,x,y);await expect(remove).toBeHidden();
  await swipe(x,x-150,y);await remove.click();await expect(amount).toHaveCount(0);await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$124.00');
