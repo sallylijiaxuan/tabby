@@ -1,38 +1,118 @@
+<div align="center">
+
 # Tabby
 
-Split restaurant receipts by item, with proportional tax and tip. Tabby is an installable web app for personal use on iPhone; the same code also runs in a desktop browser.
+### Good food. Fair shares.
 
-## Use on iPhone
+Split dinner by what everyone ordered. Let Tabby handle the tax, tip, and math.
 
-1. Open the deployed Tabby URL in Safari and sign in if prompted.
-2. Use Safari’s Share menu (or More → Share), then **Add to Home Screen**.
-3. Keep **Open as Web App** enabled if shown, then tap **Add**.
-4. Open the new Tabby icon while online and wait for **Ready offline** before going offline.
+**Scan a receipt · Assign the items · Share what everyone owes**
 
-The app includes its receipt OCR assets in its offline cache, so item entry, scanning, splits, and saved bills can work after setup without internet. **Scan receipt → Take a photo** opens the camera option; **Choose a photo** opens the photo picker. Physical camera and installation behavior should be verified on the actual iPhone.
+[Open Tabby](https://tabby-bill-splitter.carefreespark2.chatgpt.site) · [How it works](#how-it-works) · [Run locally](#run-locally)
 
-Bills are stored locally in the browser/app on that device. They do not automatically transfer from your Mac, between browsers, or between the local and hosted URLs. Clearing site data can remove bills and the offline cache.
+*An installable web app, built with personal iPhone use in mind.*
 
-## Run locally
-
-```sh
-npm run dev -- --port 5174
-```
-
-Offline caching is enabled only in production builds so it does not interfere with development reloads. To test the installed-app build locally:
-
-```sh
-npm run build
-npm start -- --port 5175
-```
-
-After rebuilding, restart the production preview. The build generates a versioned service worker from the final client assets. New versions show **Update app** rather than reloading during bill editing.
-
-Browser verification: `node tests/pwa-browser.mjs` runs the production PWA checks in Chrome. Set `PWA_BROWSER=webkit` to use Playwright’s installed WebKit browser, which checks the iPhone layout, offline reload, first receipt OCR scan offline, camera input configuration, and history.
+</div>
 
 ---
 
-# Build infrastructure
+## Dinner was great. Splitting the bill should be easy.
+
+One friend ordered a salad. Another got steak. Three people shared an appetizer, and only two had wine. Then the receipt arrives—with tax and tip still to work out.
+
+An even split doesn’t always feel fair. Calculating every share by hand takes time, especially when dishes are shared. Tabby brings the receipt, the people, and the calculations into one place, so everyone can see what they owe.
+
+## Made for the way your table orders
+
+- **Friends with different orders.** Pay for your own meal, with your share of the extras.
+- **People sharing dishes.** Assign an appetizer, dessert, or bottle to exactly the people who shared it.
+- **The person organizing the split.** Get clear totals and copy them straight into the group chat.
+
+Tabby focuses on the American dining context, where sales tax and a separate tip often sit outside the menu prices.
+
+## How it works
+
+1. **Bring your bill.** Take a receipt photo, upload one, or enter items manually. Review the scan and correct anything it missed.
+2. **Make it yours.** Add your group and assign each item to one person or several. Shared items split equally among their assigned people.
+3. **Choose how extras split.** Tax and tip default to proportional shares. Prefer equal shares? Change each independently in **Split settings**.
+4. **Share the result.** Copy everyone’s total, or include an items + tax + tip breakdown.
+
+### A fair split, down to the cent
+
+If Alex ordered $60 of food and Jamie ordered $40, a $20 tip splits into **$12 for Alex** and **$8 for Jamie** with proportional splitting. Choose equal tip splitting and each pays **$10** instead.
+
+Equal tax and tip splitting includes only people assigned at least one item. Rounding preserves every cent of the amount being split.
+
+## Small details that make dinner easier
+
+| When you need to… | Tabby helps you… |
+| --- | --- |
+| Work from a paper receipt | Scan items, restaurant name, and meal date when readable; reopen the original photo to check details. |
+| Handle shared plates | Assign an item to a few people or select the whole group. |
+| Set the tip | Enter the amount paid or choose a percentage, calculated before or after tax. |
+| Add up a few charges | Type an expression such as `8.50+2` into an amount field and press Enter. |
+| Revisit a dinner | Find saved bills grouped by meal date. |
+| Use it at the table | See mobile item cards with price, quantity, and total together; swipe left to delete. |
+| Lose your connection | Continue with cached scanning and bill tools after the app is ready offline. |
+
+## Your receipt stays on your device
+
+Receipt scanning uses Tesseract.js and a custom parser in your browser. OCR can miss text, columns, or handwritten tips, so review the extracted details before sharing the split.
+
+Bills and receipt photos are saved locally for this site and browser on your device. They don’t sync between devices, browsers, or local and hosted versions. Clearing site data can remove them. Tabby calculates and shares amounts owed; it doesn’t transfer money.
+
+## Use on iPhone
+
+1. Open [Tabby](https://tabby-bill-splitter.carefreespark2.chatgpt.site) in Safari and sign in if prompted. The current hosted version is private and requires authorized access.
+2. Use Safari’s **Share** menu (or **More → Share**), then **Add to Home Screen**.
+3. Keep **Open as Web App** enabled if shown, then tap **Add**.
+4. Open the Tabby icon while online and wait for **Ready offline** before going offline.
+
+**Scan receipt → Take a photo** opens the camera option; **Choose a photo** opens the photo picker. The same app also works in a desktop browser, with a layout suited to the larger screen. Physical camera and installation behavior should be verified on the actual iPhone.
+
+## Run locally
+
+Requires Node.js **22.13.0 or later**. From the project directory:
+
+```sh
+npm install
+npm run dev
+```
+
+Open the local URL printed in the terminal. Port numbers are optional. To choose one explicitly, use `npm run dev -- --port 5174`.
+
+### Preview the installed-app experience
+
+Offline caching is enabled only in production builds so it doesn’t interfere with development reloads.
+
+```sh
+npm run build
+npm start
+```
+
+Open the printed URL. After rebuilding, restart the production preview. New versions show **Update app** rather than reloading during bill editing.
+
+### Verify the PWA
+
+The browser test expects the production preview on port **5175**:
+
+```sh
+npm start -- --port 5175
+```
+
+In another terminal:
+
+```sh
+node tests/pwa-browser.mjs
+```
+
+The default test uses Chrome. With Playwright’s WebKit browser installed, use `PWA_BROWSER=webkit node tests/pwa-browser.mjs` to check the iPhone layout, offline reload, first receipt OCR scan offline, camera input configuration, and history.
+
+---
+
+<details>
+<summary><strong>Developer reference: build infrastructure and hosting</strong></summary>
+
 
 A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
 
@@ -165,3 +245,5 @@ The portable build runs Vinext directly without a host `timeout` command. The ma
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
 - [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+
+</details>
