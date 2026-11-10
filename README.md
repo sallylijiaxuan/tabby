@@ -79,8 +79,6 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed in the terminal. Port numbers are optional. To choose one explicitly, use `npm run dev -- --port 5174`.
-
 ### Preview the installed-app experience
 
 Offline caching is enabled only in production builds so it doesn’t interfere with development reloads.
