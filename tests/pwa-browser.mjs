@@ -42,6 +42,14 @@ try{
  await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$30.00');
  const qty=page.getByLabel('Burger quantity',{exact:true});await qty.fill('2');await qty.press('Enter');
  await expect(page.getByLabel('Burger amount',{exact:true})).toHaveText('$36.00');
+ await page.getByRole('button',{name:'View receipt',exact:true}).click();
+ await expect.poll(()=>page.getByAltText('Original uploaded receipt',{exact:true}).evaluate(el=>el.naturalWidth)).toBe(900);
+ await page.getByRole('button',{name:'Close',exact:true}).click();
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.getByLabel('Burger quantity',{exact:true})).toHaveValue('2');
+ await page.getByRole('button',{name:'View receipt',exact:true}).click();
+ await expect.poll(()=>page.getByAltText('Original uploaded receipt',{exact:true}).evaluate(el=>el.naturalWidth)).toBe(900);
+ await page.getByRole('button',{name:'Close',exact:true}).click();
  for(const width of [320,375,390,430]){
   await page.setViewportSize({width,height:844});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document fits ${width}`);
@@ -55,5 +63,5 @@ try{
  await page.getByLabel('Burrata & heirloom tomatoes quantity',{exact:true}).scrollIntoViewIfNeeded();
  await page.screenshot({path:`/private/tmp/tabby-iphone-${engine}.png`,fullPage:false});
  assert.deepEqual(errors,[]);
- console.log(`Passed (${engine}): iPhone install metadata and instructions, offline reload, first OCR scan entirely offline, camera/library selection, quantity edits, history, and 320–430px layouts.`);
+ console.log(`Passed (${engine}): iPhone install metadata and instructions, offline reload, first OCR scan entirely offline, camera/library selection, saved receipt viewing after offline reload, quantity edits, history, and 320–430px layouts.`);
 }finally{await context.close();await browser.close()}
