@@ -1,6 +1,7 @@
 import { normalizeItem, isBillCharge, type Charge, type ReceiptItem } from './receipt';
 export type Bill = {
   scanWarnings?: string[]; id: string; mealDate: string; createdAt: string; updatedAt: string; items: ReceiptItem[]; people: string[];
+  taxSplit?: 'proportional' | 'equal'; tipSplit?: 'proportional' | 'equal';
   tax: number; tip: number; tipRate: number | null; tipAfterTax: boolean; restaurant: string;
 };
 export function localMealDate(date=new Date()){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`}
@@ -14,6 +15,7 @@ export function restoreBill(data: Omit<Bill, 'id' | 'mealDate' | 'createdAt' | '
     items: restored.filter(i => !isBillCharge(i.name)), people: data.people.length ? data.people : ['You'],
     tax: (Math.round(data.tax * 100) + extraC) / 100, tip: data.tip,
     tipRate: typeof data.tipRate === 'number' ? data.tipRate : null,
+    taxSplit:data.taxSplit==='equal'?'equal':'proportional',tipSplit:data.tipSplit==='equal'?'equal':'proportional',
     tipAfterTax: data.tipAfterTax === true, restaurant: data.restaurant };
 }
 export function billTotal(bill: Bill) {

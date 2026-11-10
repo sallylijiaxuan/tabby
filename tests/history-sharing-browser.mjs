@@ -26,7 +26,7 @@ try{
  const dates=await page.locator('.history-date-group h3').allTextContents();assert(dates[0].includes('Nov 9'));assert(dates[1].includes('Nov 8'));assert(dates[2].includes('Nov 7'));
  await expect(page.locator('.history-date-group').nth(1)).toContainText('Edited dinner B');
  const row=id=>page.locator(`.history-row[data-bill-id="${id}"]`);
- await row('a').getByRole('button',{name:'Delete bill Dinner A',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(2);
+ await page.setViewportSize({width:1440,height:1000});await row('a').getByRole('button',{name:'Delete bill Dinner A',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(2);
  await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(3);await expect(page.locator('.history-date-group').last()).toContainText('Dinner A');
  await row('a').getByRole('button',{name:'Delete bill Dinner A',exact:true}).click();await page.reload();await page.getByRole('button',{name:'Open past bills',exact:true}).click();await expect(row('a')).toHaveCount(0);
  await row('b').getByRole('button',{name:'Delete bill Edited dinner B',exact:true}).click();await expect(page.locator('.history-entry')).toHaveCount(1);
