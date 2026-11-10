@@ -43,3 +43,9 @@ html{min-height:100%;-webkit-text-size-adjust:100%}body{min-height:100dvh;paddin
 }
 
 .receipt-app .extra-fields .amount-control>input{color:#354d3b}
+
+.swipe-row{position:relative}.swipe-delete{display:none}.receipt-app .tip-controls-label{margin-top:7px}.receipt-app .tip-amount-row{margin-top:5px}.receipt-app .tip-basis{margin-bottom:5px}
+@media(max-width:900px), (max-width:1100px) and (hover:none) and (pointer:coarse){
+ .swipe-row{overflow:hidden;touch-action:pan-y}.swipe-row .item{position:relative;z-index:1;background:#fffef9;transform:translateX(var(--swipe-offset,0px));transition:transform .18s ease}.swipe-row.is-dragging .item{transition:none}.swipe-delete{display:flex;position:absolute;right:16px;top:1px;bottom:1px;width:84px;min-height:44px;z-index:0;flex-direction:column;gap:7px;background:#b95e50;color:white;border:0;border-radius:0;font-size:11px;visibility:hidden}.swipe-row.is-open .swipe-delete{visibility:visible}.receipt-app .items-scroll .swipe-row .item{margin-right:16px}
+}
+@media(prefers-reduced-motion:reduce){.swipe-row .item{transition:none}}

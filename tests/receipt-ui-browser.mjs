@@ -26,7 +26,7 @@ try{
  await page.getByRole('button',{name:'20%',exact:true}).click();await page.getByRole('button',{name:'After tax',exact:true}).click();
  await expect(page.getByLabel('Receipt total',{exact:true})).toHaveText('$185.40');
  async function alignment(){
-  const positions=await page.locator('.extra-fields').evaluate(el=>{const labels=[...el.querySelectorAll(':scope > label')];return labels.map(label=>{const input=label.querySelector('input'),rect=input.getBoundingClientRect();return {left:label.getBoundingClientRect().left,right:rect.right,top:rect.top,align:getComputedStyle(input).textAlign}})});
+  const positions=await page.locator('.extras-editor').evaluate(el=>{const labels=[...el.querySelectorAll('.extra-fields > label')];return labels.map(label=>{const input=label.querySelector('input'),rect=input.getBoundingClientRect();return {left:label.getBoundingClientRect().left,right:rect.right,top:rect.top,align:getComputedStyle(input).textAlign}})});
   assert(Math.abs(positions[0].left-positions[1].left)<1);assert(Math.abs(positions[0].right-positions[1].right)<1);assert(positions[0].top<positions[1].top);assert(positions.every(p=>p.align==='right'));
  }
  for(const width of [320,390,844,980]){await page.setViewportSize({width,height:844});await alignment();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth<=el.clientWidth));}
