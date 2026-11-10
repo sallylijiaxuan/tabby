@@ -1,6 +1,6 @@
 import { normalizeItem, isBillCharge, type Charge, type ReceiptItem } from './receipt';
 export type Bill = {
-  id: string; mealDate: string; createdAt: string; updatedAt: string; items: ReceiptItem[]; people: string[];
+  scanWarnings?: string[]; id: string; mealDate: string; createdAt: string; updatedAt: string; items: ReceiptItem[]; people: string[];
   tax: number; tip: number; tipRate: number | null; tipAfterTax: boolean; restaurant: string;
 };
 export function localMealDate(date=new Date()){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`}
@@ -10,7 +10,7 @@ export function restoreBill(data: Omit<Bill, 'id' | 'mealDate' | 'createdAt' | '
   const restored = data.items.map(normalizeItem);
   const extraC = [...(data.charges ?? []), ...restored.filter(i => isBillCharge(i.name)).map(i => ({ id: i.id, name: i.name, amount: i.price * i.quantity }))]
     .reduce((sum, charge) => sum + Math.round(charge.amount * 100), 0);
-  return { id: data.id || id, mealDate: data.mealDate||localMealDate(new Date(data.createdAt||data.updatedAt||Date.now())), createdAt: data.createdAt || data.updatedAt || new Date().toISOString(), updatedAt: data.updatedAt || new Date().toISOString(),
+  return { scanWarnings:data.scanWarnings||[],id: data.id || id, mealDate: data.mealDate||localMealDate(new Date(data.createdAt||data.updatedAt||Date.now())), createdAt: data.createdAt || data.updatedAt || new Date().toISOString(), updatedAt: data.updatedAt || new Date().toISOString(),
     items: restored.filter(i => !isBillCharge(i.name)), people: data.people.length ? data.people : ['You'],
     tax: (Math.round(data.tax * 100) + extraC) / 100, tip: data.tip,
     tipRate: typeof data.tipRate === 'number' ? data.tipRate : null,
