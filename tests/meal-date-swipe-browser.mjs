@@ -1,0 +1,28 @@
+import {chromium,devices,expect} from '@playwright/test';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+try{
+ const context=await browser.newContext({...devices['iPhone 13'],locale:'en-US',timezoneId:'America/Los_Angeles'});const page=await context.newPage();
+ await page.addInitScript(()=>{if(localStorage.getItem('meal-seeded'))return;const make=(id,restaurant,mealDate,createdAt)=>({id,restaurant,mealDate,createdAt,updatedAt:createdAt,items:[{id:1,name:'Shrimp',price:26,quantity:1,people:[0,1]},{id:2,name:'Salad',price:10,quantity:1,people:[2,3]}],people:['You','Alex Chen','Jamie','Sam'],tax:3,tip:7,tipRate:null,tipAfterTax:false});const a=make('a','Cafe A','2026-11-01','2026-11-09T20:00:00Z'),b=make('b','Cafe B','2026-11-08','2026-11-07T20:00:00Z'),c=make('c','Cafe C','2026-11-01','2026-11-08T20:00:00Z');localStorage.setItem('tabby-history',JSON.stringify([a,b,c]));localStorage.setItem('tabby-bill',JSON.stringify(a));localStorage.setItem('meal-seeded','1')});
+ await page.goto('http://127.0.0.1:5174');const title=page.getByLabel('Bill name',{exact:true});await expect(title).toHaveValue('Cafe A');await expect(page.locator('.receipt-masthead input[aria-label="Bill name"]')).toHaveCount(1);assert.equal(await page.getByText('BILL / RESTAURANT',{exact:true}).count(),0);
+ await expect(page.getByLabel('Meal date',{exact:true})).toHaveValue('2026-11-01');
+ const toggle=page.getByRole('button',{name:'Choose who pays for Shrimp',exact:true});await expect(toggle.locator('.assigned-initial')).toHaveText(['Y','AC']);
+ await toggle.click();await page.getByRole('button',{name:'Select all for Shrimp',exact:true}).click();await toggle.click();await expect(toggle.locator('.assigned-initial')).toHaveText(['Y','AC','J','S']);
+ await title.fill('Seafood House');await page.getByLabel('Meal date',{exact:true}).fill('2026-10-28');await page.getByLabel('Meal date',{exact:true}).press('Tab');
+ await page.getByRole('button',{name:'Open past bills',exact:true}).click();await expect(page.locator('.history-date-group')).toHaveCount(3);
+ const labels=await page.locator('.history-date-group h3').allTextContents();assert(labels[0].includes('Nov 8'));assert(labels[1].includes('Nov 1'));assert(labels[2].includes('Oct 28'));await expect(page.locator('.history-date-group').last()).toContainText('Seafood House');
+ const client=await context.newCDPSession(page);
+ async function swipe(x,y,dx){await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let i=1;i<=8;i++)await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*i/8,y}]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}
+ const saved=page.locator('.history-row[data-bill-id="b"] .history-entry');await saved.scrollIntoViewIfNeeded();let box=await saved.boundingBox();await swipe(box.x+box.width*.75,box.y+box.height*.5,-140);
+ await expect(page.getByRole('button',{name:'Delete saved bill Cafe B',exact:true})).toBeVisible();await expect(page.locator('.history-date-group')).toHaveCount(3);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('tabby-bill')).id),'a','swiping must not open the saved bill');
+ await page.screenshot({path:'/private/tmp/tabby-past-bill-swipe.png',fullPage:false});
+ await page.getByRole('button',{name:'Delete saved bill Cafe B',exact:true}).click();await expect(page.locator('.history-row[data-bill-id="b"]')).toHaveCount(0);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(page.locator('.history-row[data-bill-id="b"]')).toHaveCount(1);await page.getByRole('button',{name:'Close',exact:true}).click();
+ const amount=page.getByLabel('Shrimp amount',{exact:true});await amount.scrollIntoViewIfNeeded();box=await amount.boundingBox();const x=box.x+box.width*.8,y=box.y+box.height*.6;await swipe(x,y,-140);
+ await expect(page.getByRole('button',{name:'Delete Shrimp',exact:true})).toBeVisible();
+ const spacing=await page.locator('.item-list>.swipe-row').first().evaluate(el=>{const content=el.querySelector('.swipe-content'),button=el.querySelector('.swipe-delete'),track=el.querySelector('.swipe-track'),total=el.querySelector('.line-amount');return {padding:parseFloat(getComputedStyle(content).paddingRight),gap:button.getBoundingClientRect().left-content.getBoundingClientRect().right,whiteBorder:el.getBoundingClientRect().right-track.getBoundingClientRect().right,textPadding:content.getBoundingClientRect().right-total.getBoundingClientRect().right}});
+ assert(spacing.padding>=16);assert(spacing.gap>=11);assert(spacing.whiteBorder>=15);assert(spacing.textPadding>=15);
+ await page.screenshot({path:'/private/tmp/tabby-padded-item-swipe.png',fullPage:false});await swipe(x-90,y,110);await expect(page.getByRole('button',{name:'Delete Shrimp',exact:true})).toBeHidden();
+ await page.reload();await expect(title).toHaveValue('Seafood House');await expect(page.getByLabel('Meal date',{exact:true})).toHaveValue('2026-10-28');await expect(page.getByRole('button',{name:'Choose who pays for Shrimp',exact:true}).locator('.assigned-initial')).toHaveText(['Y','AC','J','S']);
+ await page.locator('.receipt-masthead').scrollIntoViewIfNeeded();await page.screenshot({path:'/private/tmp/tabby-restaurant-meal-date.png',fullPage:false});
+ console.log('Passed: restaurant in title, editable/persisted meal dates, history grouped by meal date rather than creation, visible multi-word initials, real history swipe without accidental opening, Undo, interior swipe padding, and white outer borders.');
+}finally{await browser.close()}

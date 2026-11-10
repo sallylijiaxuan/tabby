@@ -19,6 +19,7 @@ try{
   if(!key)return false;const cache=await caches.open(key);
   return !!(await cache.match('/'))&&!!(await cache.match('/ocr/eng.traineddata'));
  }),{timeout:60000}).toBe(true);
+ await page.getByLabel('Meal date',{exact:true}).fill('2026-11-05');
  await page.getByLabel('Bill name',{exact:true}).fill('My iPhone dinner');
  const image=await page.evaluate(()=>{
   const c=document.createElement('canvas');c.width=900;c.height=750;const ctx=c.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,900,750);ctx.fillStyle='black';ctx.font='32px monospace';
@@ -29,6 +30,7 @@ try{
  await context.setOffline(true);
  await page.reload({waitUntil:'domcontentloaded'});
  await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('My iPhone dinner');
+ await expect(page.getByLabel('Meal date',{exact:true})).toHaveValue('2026-11-05');
  await expect(page.locator('.pwa-bar [role=status]')).toContainText('You’re offline');
  await page.getByRole('button',{name:'Scan receipt',exact:true}).click();
  const cameraPromise=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Take a photo',exact:true}).click();const camera=await cameraPromise;
@@ -42,6 +44,10 @@ try{
  await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$30.00');
  const qty=page.getByLabel('Burger quantity',{exact:true});await qty.fill('2');await qty.press('Enter');
  await expect(page.getByLabel('Burger amount',{exact:true})).toHaveText('$36.00');
+ await page.getByRole('button',{name:'Choose who pays for Burger',exact:true}).click();
+ await page.getByRole('button',{name:'Select all for Burger',exact:true}).click();
+ await page.getByRole('button',{name:'Choose who pays for Burger',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Choose who pays for Burger',exact:true}).locator('.assigned-initial')).toHaveCount(4);
  await page.getByRole('button',{name:'View receipt',exact:true}).click();
  await expect.poll(()=>page.getByAltText('Original uploaded receipt',{exact:true}).evaluate(el=>el.naturalWidth)).toBe(900);
  await page.getByRole('button',{name:'Close',exact:true}).click();
@@ -59,6 +65,7 @@ try{
  await expect(page.locator('.history-entry')).toHaveCount(2);
  await page.getByRole('button').filter({hasText:'My iPhone dinner'}).click();
  await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('My iPhone dinner');
+ await expect(page.getByLabel('Meal date',{exact:true})).toHaveValue('2026-11-05');
  await page.setViewportSize({width:390,height:844});
  await page.getByLabel('Burrata & heirloom tomatoes quantity',{exact:true}).scrollIntoViewIfNeeded();
  await page.screenshot({path:`/private/tmp/tabby-iphone-${engine}.png`,fullPage:false});
