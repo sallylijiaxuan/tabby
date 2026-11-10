@@ -10,8 +10,6 @@ Split dinner by what everyone ordered. Let Tabby handle the tax, tip, and math.
 
 [Open Tabby](https://tabby-bill-splitter.carefreespark2.chatgpt.site) · [How it works](#how-it-works) · [Run locally](#run-locally)
 
-*An installable web app, built with personal iPhone use in mind.*
-
 </div>
 
 ---
