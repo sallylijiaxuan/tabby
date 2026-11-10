@@ -13,12 +13,12 @@ try{
  await page.getByRole('button',{name:'Install app',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'Install Tabby'})).toContainText('Add to Home Screen');
  await page.getByRole('button',{name:'Got it',exact:true}).click();
- await page.waitForFunction(async()=>{
+ await expect.poll(()=>page.evaluate(async()=>{
   if(!navigator.serviceWorker.controller)return false;
   const keys=await caches.keys(),key=keys.find(key=>key.startsWith('tabby-'));
   if(!key)return false;const cache=await caches.open(key);
   return !!(await cache.match('/'))&&!!(await cache.match('/ocr/eng.traineddata'));
- },null,{timeout:60000});
+ }),{timeout:60000}).toBe(true);
  await page.getByLabel('Bill name',{exact:true}).fill('My iPhone dinner');
  const image=await page.evaluate(()=>{
   const c=document.createElement('canvas');c.width=900;c.height=750;const ctx=c.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,900,750);ctx.fillStyle='black';ctx.font='32px monospace';
@@ -27,7 +27,7 @@ try{
  });
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('tabby-bill')).restaurant)).toBe('My iPhone dinner');
  await context.setOffline(true);
- await page.reload();
+ await page.reload({waitUntil:'domcontentloaded'});
  await expect(page.getByLabel('Bill name',{exact:true})).toHaveValue('My iPhone dinner');
  await expect(page.locator('.pwa-bar [role=status]')).toContainText('You’re offline');
  await page.getByRole('button',{name:'Scan receipt',exact:true}).click();
@@ -37,8 +37,8 @@ try{
  assert.equal(await page.locator('input[type=file]').getAttribute('capture'),null);
  await library.setFiles({name:'receipt.png',mimeType:'image/png',buffer:Buffer.from(image,'base64')});
  await expect(page.getByLabel('Burger price',{exact:true})).toHaveValue('18',{timeout:90000});
- await expect(page.getByLabel('Tax amount',{exact:true})).toHaveValue('3');
- await expect(page.getByLabel('Tip amount',{exact:true})).toHaveValue('6');
+ await expect(page.getByLabel('Tax amount',{exact:true})).toHaveValue('3.00');
+ await expect(page.getByLabel('Tip amount',{exact:true})).toHaveValue('6.00');
  await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$30.00');
  const qty=page.getByLabel('Burger quantity',{exact:true});await qty.fill('2');await qty.press('Enter');
  await expect(page.getByLabel('Burger amount',{exact:true})).toHaveText('$36.00');
@@ -47,6 +47,7 @@ try{
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document fits ${width}`);
   assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth<=el.clientWidth),`items fit ${width}`);
  }
+ await page.getByRole('button',{name:'Open Tabby menu',exact:true}).click();
  await page.getByRole('button',{name:'Past bills',exact:true}).click();
  await expect(page.locator('.history-entry')).toHaveCount(2);
  await page.getByRole('button').filter({hasText:'My iPhone dinner'}).click();

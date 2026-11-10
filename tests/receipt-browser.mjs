@@ -20,8 +20,8 @@ try {
  await page.getByRole('status').filter({hasText:'Receipt scanned.'}).waitFor({timeout:90000});
  assert.equal(await page.getByLabel('Burger price',{exact:true}).inputValue(),'18');
  assert.equal(await page.getByLabel('Salad price',{exact:true}).inputValue(),'12');
- assert.equal(await page.getByLabel('Tax amount',{exact:true}).inputValue(),'3');
- assert.equal(await page.getByLabel('Tip amount',{exact:true}).inputValue(),'6');
+ assert.equal(await page.getByLabel('Tax amount',{exact:true}).inputValue(),'3.00');
+ assert.equal(await page.getByLabel('Tip amount',{exact:true}).inputValue(),'6.00');
  assert.deepEqual(errors,[]);
  // A failed scan preserves the existing bill and offers a retry.
  await page.locator('input[type=file]').setInputFiles({name:'bad.png',mimeType:'image/png',buffer:Buffer.from('not an image')});

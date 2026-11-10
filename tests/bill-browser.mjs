@@ -8,7 +8,7 @@ try {
  await expect(page.getByLabel('Pasta quantity',{exact:true})).toHaveValue('2');
  await expect(page.getByLabel('Pasta price',{exact:true})).toHaveValue('30');
  await expect(page.getByLabel('Pasta amount',{exact:true})).toHaveText('$60.00');
- await expect(page.getByLabel('Tax amount',{exact:true})).toHaveValue('20');
+ await expect(page.getByLabel('Tax amount',{exact:true})).toHaveValue('20.00');
  await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$100.00');
  assert.equal(await page.getByRole('button',{name:'Add NCA or other charge'}).count(),0);
  assert.equal(await page.getByLabel('NCA price',{exact:true}).count(),0);
@@ -26,10 +26,10 @@ try {
  await expect(page.getByLabel('Pasta amount',{exact:true})).toHaveText('$33.00');
  await qty.fill('0');await qty.press('Enter');await expect(page.getByRole('alert')).toContainText('at least 1');await qty.press('Escape');
  const tax=page.getByLabel('Tax amount',{exact:true});await tax.fill('8.50+2');await tax.press('Enter');
- await expect(tax).toHaveValue('10.5');
- await page.reload();await expect(qty).toHaveValue('3');await expect(tax).toHaveValue('10.5');
+ await expect(tax).toHaveValue('10.50');
+ await page.reload();await expect(qty).toHaveValue('3');await expect(tax).toHaveValue('10.50');
  await expect(page.getByLabel('Items subtotal',{exact:true})).toHaveText('$73.00');
- await page.reload();await expect(tax).toHaveValue('10.5');
+ await page.reload();await expect(tax).toHaveValue('10.50');
  await page.setViewportSize({width:390,height:844});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
  assert(await page.locator('.items-scroll').evaluate(el=>el.scrollWidth<=el.clientWidth));
